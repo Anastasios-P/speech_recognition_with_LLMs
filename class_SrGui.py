@@ -1,9 +1,8 @@
 import tkinter as tki
-from tkinter import StringVar, END, Scrollbar, Frame
+from tkinter import StringVar, END, Scrollbar, Frame, filedialog, simpledialog, IntVar, Checkbutton, Listbox, ttk
 import tkinter.scrolledtext as tkiS
 from functools import partial
 from speechR import *
-from tkinter import filedialog, simpledialog, IntVar, Checkbutton
 import os
 from multiprocessing import Pipe
 import csv
@@ -11,8 +10,6 @@ import asyncio
 import threading
 import gc
 import win32gui
-#from concurrent.futures import ThreadPoolExecutor
-#import string
     
 class SrGui():
     #Fenster1 für die GUI erzeugen
@@ -48,7 +45,7 @@ class SrGui():
     
     label2=tki.Label(window1, text=message.get()) #Label für die Nachrichten
     label2.pack(side="top")    
-    
+        
     def __init__(self, wordsReceive, e_start_sr, e_end_sr, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E): 
         LMRunning_E.clear()
         self.window1Handler = self
@@ -69,27 +66,59 @@ class SrGui():
         self.deleteLM_flag = False 
         self.flag_once_deleteLM = True
         self.flag_once_loadLM = True
-        #Online LLMs
-        cmd4=partial(self.startLM_english, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)
-        self.B4 = tki.Button(self.window1, text="Google (English)", font="Bahnschrift", command=cmd4, padx=23)
-        self.B4.pack(side="right")
-        self.B4.place(relx=0.93,rely = 0.2,anchor="se")
         
-        cmd2=partial(self.startLM_greek, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)
-        self.B5 = tki.Button(self.window1, text="Google (Ελληνικά)", font="Bahnschrift", command=cmd2, padx=15)
-        self.B5.pack(side="right")
-        self.B5.place(relx=0.93,rely = 0.3,anchor="se")   
+        #Event variables
+        self.onlineSR_E = onlineSR_E
+        self.offlineSR_E = offlineSR_E
+        self.e_start_sr = e_start_sr
+        self.e_end_sr = e_end_sr
+        self.srFinished = srFinished
+        self.srStart = srStart
+        self.closeOfflineSR_E = closeOfflineSR_E
+        self.LMRunning_E = LMRunning_E
+        #Pipe variables
+        self.hmmSend = hmmSend
+        self.lmSend = lmSend
+        self.dictionarySend = dictionarySend  
+        self.languageReceive = languageReceive
+        self.languageSend = languageSend
+        self.wordsReceive = wordsReceive 
 
-        cmd3=partial(self.startLM_deutsch, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)
-        self.B5 = tki.Button(self.window1, text="Google (Deutsch)", font="Bahnschrift", command=cmd3, padx=15)
-        self.B5.pack(side="right")
-        self.B5.place(relx=0.93,rely = 0.4,anchor="se")    
+        #Online LLMs
+        #Available languages
+        self.languages = {
+        "English" : "en-US",
+        "Deutsch" : "de-GE",
+        "ελληνικά" : "el-GR",
+        "Français" : "fr-FR",
+        "日本語" : "ja-JP",
+        "中國人" : "zh-CN",
+        "Русский" : "ru-RU",
+        "Español" : "es-ES",
+        "Italiano" : "it-IT"
+        }
+        
+        self.label1 = tki.Label(self.window1, text="Online speech recognition", font=("Bahnschrift", 21)) #Label für die Nachrichten
+        self.label1.pack(side = "right") 
+        self.label1.place(relx = 0.94, rely = 0.1, anchor = "se")
+    
+        self.listbox2 = ttk.Combobox(self.window1, values=list(self.languages), state="readonly", font=("Bahnschrift", 21))
+        self.listbox2.set("Select a language");
+        self.listbox2.pack()
+        
+        #cmd1=partial(self.startLM, 'language', e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart, hmmSend, lmSend, dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)        
+        #self.listbox2(self.window1, text="choose", command = cmd1)
+        
+        self.listbox2.current(0)
+        self.listbox2.bind("<<ComboboxSelected>>", self.chooseLanguage)        
+        self.listbox2.pack(side="right")
+        self.listbox2.place(relx = 0.94, rely = 0.2, anchor = "se")    
 
         cmd5=partial(self.closeOfflineSR, closeOfflineSR_E) 
         self.B7 = tki.Button(self.window1, text="end online speech recognition", font="Bahnschrift", command=cmd5, padx=21)
         self.B7.pack(side="left")
         self.rel_y += 0.1
-        self.B7.place(relx=0.93,rely = 0.5,anchor="se")  
+        self.B7.place(relx=0.94,rely = 0.5,anchor="se")  
         self.B7.configure(bg = "red")   
 
         self.listbox1 = tki.Listbox(self.window1, height = 14, width = 35)
@@ -122,7 +151,14 @@ class SrGui():
         t2 = threading.Thread(target = asyncio.run, args=[self.updateListAndListbox(0.25, self.csvFile, self.listbox1)], daemon = True) 
         t2.start()   
         
-        self.window1.mainloop()            
+        self.window1.mainloop()  
+
+    def chooseLanguage(self, event):
+        self.onlineSR_E.set()
+        self.languageSend.send(self.languages[self.listbox2.get()])
+        print("Language chosen.")         
+        self.thread1 = threading.Thread(target=asyncio.run, args=[self.startLM('english', self.e_start_sr, self.e_end_sr, self.wordsReceive, self.languageReceive, self.languageSend, self.srFinished, self.srStart, self.hmmSend, self.lmSend, self.dictionarySend, self.closeOfflineSR_E, self.onlineSR_E, self.offlineSR_E, self.LMRunning_E)], daemon = True)
+        self.thread1.start()       
     
     def label2Receive(self, connection):
         w = str(connection.recv())
@@ -252,51 +288,6 @@ class SrGui():
             self.flag_once_loadLM = False
             t1 = threading.Thread(target = asyncio.run, args=[self.selectItemFromListbox(0.05, self.csvFile, self.listbox1, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)], daemon = True) 
             t1.start()         
-        
-    def subWindow(self, Pwindow, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E):        
-        t1 = threading.Thread(target = asyncio.run, args=[self.ifAWindowIsClosedThenDestroyAnotherWindow(self.window1, self.window1.window2, 0.04, True)], daemon = True) 
-        t1.start()
-        
-        self.window1.window2.daemon = True
-        self.window1.window2.attributes("-alpha", 1.0, "-topmost", True)
-        self.window1.window2.resizable(False,False) 
-        self.window1.window2.geometry("1240x800") 
-        
-        #LMs
-        cmd=partial(self.addNewLM, Pwindow, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E)
-        self.B7 = tki.Button(self.window1.window2, text="Add New LM", font="Bahnschrift", command=cmd, padx=23)
-        self.B7.pack(side="right")
-        self.B7.place(relx=0.07,rely=0.2,anchor="sw")
-        self.B7.configure(bg = "green")
-        
-        cmd2=partial(self.selectAndDelete, 0.02, Pwindow.window1.window2.listbox2, self.csvFile)
-        self.B8 = tki.Button(self.window1.window2, text="Delete LM", font="Bahnschrift", command=cmd2, padx=15)
-        self.B8.pack(side="right")
-        self.B8.place(relx=0.07,rely=0.3,anchor="sw") 
-        self.B8.configure(bg = "red")   
-
-        cmd3=partial(self.loadLM, e_start_sr, e_end_sr, wordsReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E)       
-        self.B9 = tki.Button(self.window1.window2, text="Load LM", font="Bahnschrift", command=cmd3, padx=15)        
-        self.B9.pack(side="right")
-        self.B9.place(relx=0.07,rely=0.4,anchor="sw")
-        self.B9.configure(bg = "green")          
-
-        self.window1.window2.mainloop()
-
-    #Asynchronous function which checks in time intervals (intervalInSeconds) if a window has been closed (windowHandel_closed) and in case it is closed, it destroys another window (windowHandel_destroy). If (exitProgramY_N) is set True, it also exits the main program.
-    #Use (daemon = True) when starting this function from a new thread or process. Otherwise it doesn't end when the main program ends, instead, it continues running in the background.
-    async def ifAWindowIsClosedThenDestroyAnotherWindow(self, windowHandel_closed, windowHandel_destroy, intervalInSeconds, exitProgramY_N):
-        while(True):
-            await asyncio.sleep(intervalInSeconds)
-            
-            try:
-                if (windowHandel_closed.winfo_exists()):
-                    pass
-            except:
-                windowHandel_destroy.destroy()
-                gc.collect()
-                if(exitProgramY_N == True):
-                    exit() 
             
     #start Language Model    
     def LMs(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E):               
