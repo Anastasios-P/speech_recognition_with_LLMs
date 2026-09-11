@@ -46,7 +46,7 @@ class SrGui():
     label2=tki.Label(window1, text=message.get()) #Label für die Nachrichten
     label2.pack(side="top")    
         
-    def __init__(self, wordsReceive, e_start_sr, e_end_sr, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E): 
+    def __init__(self, wordsReceive, e_start_sr, e_end_sr, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E, LMRunning_E): 
         LMRunning_E.clear()
         self.window1Handler = self
         #GUI transparency
@@ -74,7 +74,7 @@ class SrGui():
         self.e_end_sr = e_end_sr
         self.srFinished = srFinished
         self.srStart = srStart
-        self.closeOfflineSR_E = closeOfflineSR_E
+        self.closeSR_E = closeSR_E
         self.LMRunning_E = LMRunning_E
         #Pipe variables
         self.hmmSend = hmmSend
@@ -98,23 +98,22 @@ class SrGui():
         "Italiano" : "it-IT"
         }
         
+        #Label 1 - on the right side of the window
         self.label1 = tki.Label(self.window1, text="Online speech recognition", font=("Bahnschrift", 21)) #Label für die Nachrichten
         self.label1.pack(side = "right") 
         self.label1.place(relx = 0.94, rely = 0.1, anchor = "se")
     
+        #Listbox 2 - on the right side of the window
         self.listbox2 = ttk.Combobox(self.window1, values=list(self.languages), state="readonly", font=("Bahnschrift", 21))
         self.listbox2.set("Select a language");
         self.listbox2.pack()
-        
-        #cmd1=partial(self.startLM, 'language', e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart, hmmSend, lmSend, dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)        
-        #self.listbox2(self.window1, text="choose", command = cmd1)
         
         self.listbox2.current(0)
         self.listbox2.bind("<<ComboboxSelected>>", self.chooseLanguage)        
         self.listbox2.pack(side="right")
         self.listbox2.place(relx = 0.94, rely = 0.2, anchor = "se")    
 
-        cmd5=partial(self.closeOfflineSR, closeOfflineSR_E) 
+        cmd5=partial(self.closeOfflineSR, closeSR_E) 
         self.B7 = tki.Button(self.window1, text="end online speech recognition", font="Bahnschrift", command=cmd5, padx=21)
         self.B7.pack(side="left")
         self.rel_y += 0.1
@@ -130,19 +129,19 @@ class SrGui():
         self.List1 = []
         
         #LMs
-        cmd=partial(self.addNewLM, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E)
+        cmd=partial(self.addNewLM, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E)
         self.B7 = tki.Button(self.window1, text="Add New LM", font="Bahnschrift", command=cmd, padx=23)
         self.B7.pack(side="right")
         self.B7.place(relx=0.07,rely=0.1,anchor="sw")
         self.B7.configure(bg = "green")
         
-        cmd2=partial(self.deleteLM, e_start_sr, e_end_sr, wordsReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E)
+        cmd2=partial(self.deleteLM, e_start_sr, e_end_sr, wordsReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E)
         self.B8 = tki.Button(self.window1, text="Delete LM", font="Bahnschrift", command=cmd2, padx=15)
         self.B8.pack(side="right")
         self.B8.place(relx=0.07,rely=0.2,anchor="sw") 
         self.B8.configure(bg = "red")   
 
-        cmd3=partial(self.loadLM, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)       
+        cmd3=partial(self.loadLM, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E, LMRunning_E)       
         self.B9 = tki.Button(self.window1, text="Load LM", font="Bahnschrift", command=cmd3, padx=15)        
         self.B9.pack(side="right")
         self.B9.place(relx=0.07,rely=0.3,anchor="sw")
@@ -154,10 +153,11 @@ class SrGui():
         self.window1.mainloop()  
 
     def chooseLanguage(self, event):
+        self.closeSR_E.set() #first close the running speech recognitions -if there are any running..
         self.onlineSR_E.set()
         self.languageSend.send(self.languages[self.listbox2.get()])
         print("Language chosen.")         
-        self.thread1 = threading.Thread(target=asyncio.run, args=[self.startLM('english', self.e_start_sr, self.e_end_sr, self.wordsReceive, self.languageReceive, self.languageSend, self.srFinished, self.srStart, self.hmmSend, self.lmSend, self.dictionarySend, self.closeOfflineSR_E, self.onlineSR_E, self.offlineSR_E, self.LMRunning_E)], daemon = True)
+        self.thread1 = threading.Thread(target=asyncio.run, args=[self.startLM()], daemon = True)
         self.thread1.start()       
     
     def label2Receive(self, connection):
@@ -196,45 +196,45 @@ class SrGui():
             return ""    
 
     #start Language Model
-    async def startLM(self, language, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E):
-        LMRunning_E.set()
-        closeOfflineSR_E.clear()
-        if(onlineSR_E.is_set()):
-            onlineSR_E.clear()
-            lang = str(languageReceive.recv())
+    async def startLM(self):
+        self.LMRunning_E.set()
+        self.closeSR_E.clear()
+        if(self.onlineSR_E.is_set()):
+            self.onlineSR_E.clear()
+            lang = str(self.languageReceive.recv())
             while( True ):
-                if(closeOfflineSR_E.is_set()):
-                    LMRunning_E.clear()
+                if(self.closeSR_E.is_set()):
+                    self.LMRunning_E.clear()
                     return                
-                languageSend.send(lang)
-                e_start_sr.set()
-                e_end_sr.wait()  
-                e_end_sr.clear()
-                if(closeOfflineSR_E.is_set()):
-                    LMRunning_E.clear()
+                self.languageSend.send(lang)
+                self.e_start_sr.set()
+                self.e_end_sr.wait()  
+                self.e_end_sr.clear()
+                if(self.closeSR_E.is_set()):
+                    self.LMRunning_E.clear()
                     return                
-                w = wordsReceive.recv()
+                w = self.wordsReceive.recv()
                 self.showSpokenText(w)
                 self.label2U(w)
-        elif(offlineSR_E.is_set()):
-            offlineSR_E.clear()            
+        elif(self.offlineSR_E.is_set()):
+            self.offlineSR_E.clear()            
             while(True):
-                if(closeOfflineSR_E.is_set()):
-                    LMRunning_E.clear()
+                if(self.closeSR_E.is_set()):
+                    self.LMRunning_E.clear()
                     return                               
-                srStart.set()
-                srFinished.wait() 
-                srFinished.clear()
-                if(closeOfflineSR_E.is_set()):
-                    LMRunning_E.clear()
+                self.srStart.set()
+                self.srFinished.wait() 
+                self.srFinished.clear()
+                if(self.closeSR_E.is_set()):
+                    self.LMRunning_E.clear()
                     return                  
-                w = wordsReceive.recv()
+                w = self.wordsReceive.recv()
                 self.showSpokenText(w)
                 self.label2U(w)
                 self.label2.configure(text=self.message.get(), font="Bahnschrift")
                 self.window1.update()              
 
-    def addNewLM(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E):  
+    def addNewLM(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E):  
         self.LoadLM_flag = False
         self.deleteLM_flag = False
         #Open a dialog to ask the new LLM name
@@ -268,7 +268,7 @@ class SrGui():
             data = [{'name':self.newLLM_name, 'hmm':self.newLLM_hmm, 'lm':self.newLLM_lm, 'dic':self.newLLM_dic}]
             self.appendConfigFile("LM_list.csv", data)
             
-    def deleteLM(self, e_start_sr, e_end_sr, wordsReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E): 
+    def deleteLM(self, e_start_sr, e_end_sr, wordsReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E): 
         self.listbox1.selection_clear(0, tki.END) #diselect the previous selection in the listbox1, if there is any.
         self.LoadLM_flag = False
         self.deleteLM_flag = True
@@ -279,48 +279,27 @@ class SrGui():
             t1.start()         
         
         
-    def loadLM(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E):  
+    def loadLM(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E, LMRunning_E):  
         self.listbox1.selection_clear(0, tki.END) #diselect the previous selection in the listbox1, if there is any.
         self.listbox1.config(fg = "green", font = "Comic", selectmode = "single")  
         self.LoadLM_flag = True
         self.deleteLM_flag = False
         if(self.flag_once_loadLM == True):
             self.flag_once_loadLM = False
-            t1 = threading.Thread(target = asyncio.run, args=[self.selectItemFromListbox(0.05, self.csvFile, self.listbox1, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)], daemon = True) 
+            t1 = threading.Thread(target = asyncio.run, args=[self.selectItemFromListbox(0.05, self.csvFile, self.listbox1, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E, LMRunning_E)], daemon = True) 
             t1.start()         
             
     #start Language Model    
-    def LMs(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E):               
+    def LMs(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E):               
         pass
         
-    def closeOfflineSR(self, closeOfflineSR_E):
-        closeOfflineSR_E.set()
+    def closeOfflineSR(self, closeSR_E):
+        closeSR_E.set()
         
-    def f2(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E): 
+    def f2(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E): 
         offlineSR_E.set()
-        self.window1Handler.thread6 = threading.Thread(target = asyncio.run, args=[self.startLM('', e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)], daemon = True)         
+        self.window1Handler.thread6 = threading.Thread(target = asyncio.run, args=[self.startLM()], daemon = True)         
         self.window1Handler.thread6.start()
-        
-    #def f3(self):
-        #self.window1.window2.mainloop()
-        
-    def startLM_greek(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E):
-        onlineSR_E.set()
-        languageSend.send('el-GR')
-        self.thread3 = threading.Thread(target=asyncio.run, args=[self.startLM('greek', e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart, hmmSend, lmSend, dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)], daemon = True)
-        self.thread3.start()
-        
-    def startLM_english(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E):
-        onlineSR_E.set()
-        languageSend.send('en-US')
-        self.thread4 = threading.Thread(target=asyncio.run, args=[self.startLM('english', e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart, hmmSend, lmSend, dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)], daemon = True)
-        self.thread4.start()
-        
-    def startLM_deutsch(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E):
-        onlineSR_E.set()
-        languageSend.send('de-GE')
-        self.thread5 = threading.Thread(target=asyncio.run, args=[self.startLM('deutsch', e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart, hmmSend, lmSend, dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)], daemon = True)
-        self.thread5.start()
         
     def createNewFile(self, name):
         try:
@@ -375,7 +354,7 @@ class SrGui():
                         i += 1
         return self.list1                   
         
-    async def selectItemFromListbox(self, secondsTimeInterval, csvFileName, listbox, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart, hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E): 
+    async def selectItemFromListbox(self, secondsTimeInterval, csvFileName, listbox, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart, hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E, LMRunning_E): 
         while(True):
            
             await asyncio.sleep(secondsTimeInterval)
@@ -389,7 +368,7 @@ class SrGui():
 
                         offlineSR_E.set() 
                         
-                        t = threading.Thread(target = asyncio.run, args=[self.startLM('', e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeOfflineSR_E, onlineSR_E, offlineSR_E, LMRunning_E)], daemon = True)         
+                        t = threading.Thread(target = asyncio.run, args=[self.startLM()], daemon = True)         
                         t.start()                                        
 
     async def updateListAndListbox(self, secondsTimeInterval, csvFileName, listbox):
