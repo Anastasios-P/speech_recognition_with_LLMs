@@ -114,7 +114,7 @@ class SrGui():
         self.listbox2.place(relx = 0.94, rely = 0.2, anchor = "se")    
 
         cmd5=partial(self.closeOfflineSR, closeSR_E) 
-        self.B7 = tki.Button(self.window1, text="end online speech recognition", font="Bahnschrift", command=cmd5, padx=21)
+        self.B7 = tki.Button(self.window1, text="end running speech recognition", font="Bahnschrift", command=cmd5, padx=21)
         self.B7.pack(side="left")
         self.rel_y += 0.1
         self.B7.place(relx=0.94,rely = 0.5,anchor="se")  
@@ -129,19 +129,19 @@ class SrGui():
         self.List1 = []
         
         #LMs
-        cmd=partial(self.addNewLM, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E)
+        cmd=partial(self.addNewLM)
         self.B7 = tki.Button(self.window1, text="Add New LM", font="Bahnschrift", command=cmd, padx=23)
         self.B7.pack(side="right")
         self.B7.place(relx=0.07,rely=0.1,anchor="sw")
         self.B7.configure(bg = "green")
         
-        cmd2=partial(self.deleteLM, e_start_sr, e_end_sr, wordsReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E)
+        cmd2=partial(self.deleteLM)
         self.B8 = tki.Button(self.window1, text="Delete LM", font="Bahnschrift", command=cmd2, padx=15)
         self.B8.pack(side="right")
         self.B8.place(relx=0.07,rely=0.2,anchor="sw") 
         self.B8.configure(bg = "red")   
 
-        cmd3=partial(self.loadLM, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E, LMRunning_E)       
+        cmd3=partial(self.loadLM)       
         self.B9 = tki.Button(self.window1, text="Load LM", font="Bahnschrift", command=cmd3, padx=15)        
         self.B9.pack(side="right")
         self.B9.place(relx=0.07,rely=0.3,anchor="sw")
@@ -234,7 +234,7 @@ class SrGui():
                 self.label2.configure(text=self.message.get(), font="Bahnschrift")
                 self.window1.update()              
 
-    def addNewLM(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E):  
+    def addNewLM(self):  
         self.LoadLM_flag = False
         self.deleteLM_flag = False
         #Open a dialog to ask the new LLM name
@@ -244,15 +244,15 @@ class SrGui():
             return
             
         #open a dialog for asking the folder for the HMM
-        hmm = self.chooseFolder("select Hidden Markov Model ordner")
-        self.newLLM_hmm = hmm
+        self.hmm = self.chooseFolder("select Hidden Markov Model ordner")
+        self.newLLM_hmm = self.hmm
 
         if(self.newLLM_hmm == ""): 
             return       
         
         #open a dialog for asking the file for the Language Model
-        lm = self.chooseFile("select file for this Large Language Model")
-        self.newLLM_lm = lm
+        self.lm = self.chooseFile("select file for this Large Language Model")
+        self.newLLM_lm = self.lm
         
         if(self.newLLM_lm == ""):           
             return
@@ -268,7 +268,7 @@ class SrGui():
             data = [{'name':self.newLLM_name, 'hmm':self.newLLM_hmm, 'lm':self.newLLM_lm, 'dic':self.newLLM_dic}]
             self.appendConfigFile("LM_list.csv", data)
             
-    def deleteLM(self, e_start_sr, e_end_sr, wordsReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E): 
+    def deleteLM(self): 
         self.listbox1.selection_clear(0, tki.END) #diselect the previous selection in the listbox1, if there is any.
         self.LoadLM_flag = False
         self.deleteLM_flag = True
@@ -279,25 +279,21 @@ class SrGui():
             t1.start()         
         
         
-    def loadLM(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E, LMRunning_E):  
+    def loadLM(self):  
         self.listbox1.selection_clear(0, tki.END) #diselect the previous selection in the listbox1, if there is any.
         self.listbox1.config(fg = "green", font = "Comic", selectmode = "single")  
         self.LoadLM_flag = True
         self.deleteLM_flag = False
         if(self.flag_once_loadLM == True):
             self.flag_once_loadLM = False
-            t1 = threading.Thread(target = asyncio.run, args=[self.selectItemFromListbox(0.05, self.csvFile, self.listbox1, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E, LMRunning_E)], daemon = True) 
+            t1 = threading.Thread(target = asyncio.run, args=[self.selectItemFromListbox(0.05, self.csvFile, self.listbox1)], daemon = True) 
             t1.start()         
-            
-    #start Language Model    
-    def LMs(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E):               
-        pass
         
     def closeOfflineSR(self, closeSR_E):
         closeSR_E.set()
         
-    def f2(self, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend, srFinished, srStart,hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E): 
-        offlineSR_E.set()
+    def f2(self): 
+        self.offlineSR_E.set()
         self.window1Handler.thread6 = threading.Thread(target = asyncio.run, args=[self.startLM()], daemon = True)         
         self.window1Handler.thread6.start()
         
@@ -354,19 +350,19 @@ class SrGui():
                         i += 1
         return self.list1                   
         
-    async def selectItemFromListbox(self, secondsTimeInterval, csvFileName, listbox, e_start_sr, e_end_sr, wordsReceive, languageReceive, languageSend,srFinished,srStart, hmmSend,lmSend,dictionarySend, closeSR_E, onlineSR_E, offlineSR_E, LMRunning_E): 
+    async def selectItemFromListbox(self, secondsTimeInterval, csvFileName, listbox): 
         while(True):
            
             await asyncio.sleep(secondsTimeInterval)
             if(self.LoadLM_flag == True): 
-                if not(LMRunning_E.is_set()):               
+                if not(self.LMRunning_E.is_set()):               
                     element = listbox.curselection()
                     if(len(element) > 0): 
-                        hmmSend.send(str(self.List1[element[0]][1]))
-                        lmSend.send(str(self.List1[element[0]][2]))
-                        dictionarySend.send(str(self.List1[element[0]][3]))
+                        self.hmmSend.send(str(self.List1[element[0]][1]))
+                        self.lmSend.send(str(self.List1[element[0]][2]))
+                        self.dictionarySend.send(str(self.List1[element[0]][3]))
 
-                        offlineSR_E.set() 
+                        self.offlineSR_E.set() 
                         
                         t = threading.Thread(target = asyncio.run, args=[self.startLM()], daemon = True)         
                         t.start()                                        
