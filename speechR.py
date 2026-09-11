@@ -33,13 +33,9 @@ def onlineSRecognition(languageReceive, wordsSend, e_start_sr, e_end_sr, closeOf
                 e_end_sr.set()
                 continue 
                     
-        if(closeOfflineSR_E.is_set()):
-            wordsSend.send("")
-            e_end_sr.set()
-        else:
-            print(voiceInput, flush = True)
-            wordsSend.send(str(voiceInput))
-            e_end_sr.set() 
+        print(voiceInput, flush = True)
+        wordsSend.send(str(voiceInput))
+        e_end_sr.set() 
                 
             
 def offlineSRecognition(hmmReceived, lmReceived, dictionaryReceived, languageReceived, wordsSend, srStart, srFinished, closeOfflineSR_E):
