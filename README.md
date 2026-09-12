@@ -1,6 +1,6 @@
-# Speech recognition with Large Language Models
-## Load a LLM (give the path to LLM)
-## also: Speech recognition through the Google Server for 9 languages
+# Speech recognition with Language Models
+## Load Language Models
+## Speech recognition via the Google Server for 9 languages
 
 ### Uses python 3.12.9
 ### The following prerequisites are needed
@@ -8,7 +8,4 @@
 #### SpeechRecognition
 #### pocketsphinx
 #### wheel
-#### pyaudio
 #### asyncio-pipe
-####  
-#### pip install --upgrade setuptools
